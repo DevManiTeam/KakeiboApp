@@ -1,0 +1,13 @@
+Target
+main
+
+Bypass list
+あなた
+→ For pull requests only
+
+Rules
+☑ Restrict updates
+☑ Require a pull request before merging
+    Required approvals: 1
+☑ Restrict deletions
+☑ Block force pushes
