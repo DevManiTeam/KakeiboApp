@@ -4,6 +4,13 @@
 # レシート画像(https://cosmopier.com/cp-ai-lab/archives/1069,https://go-went-gone.hatenablog.com/entry/2022/05/07/005659)画像名は改変しています。
 
 from paddleocr import PaddleOCR
+import re
+
+# 読み取ったレシートの文字をテキストファイルに読み込む関数
+def save_text(line_texts, filename):
+    with open(filename, "w", encoding="utf-8") as f:
+        for line in line_texts:
+            f.write(line + "\n")
 
 # 日本語対応 OCR インスタンスを作成
 ocr = PaddleOCR(
@@ -13,7 +20,7 @@ ocr = PaddleOCR(
 )
 
 # 解析したい画像
-img_path = "test4.jpg"
+img_path = "receipt2.jpg"
 
 # OCR の実行
 result = ocr.predict(img_path)
@@ -65,20 +72,7 @@ for page in result:
         row["items"].sort(key=lambda item: item["x"])
         line = "  ".join(item["text"] for item in row["items"])
         line_texts.append(line)
-        print(line)
+        #print(line)
 
-def extract_total(line_texts):
-    for line in line_texts:
-        if ("合計" in line) and ("值引" not in line):
-            # ここに今まで作った処理
-            parts = line.split()
-            amount = parts[1]
-            amount = amount.replace("¥", "")
-            amount = amount.replace(".", "")
-            amount = amount.replace(",", "")
-            amount = int(amount)
+save_text(line_texts, "receipt2.txt")
 
-            return amount
-    return None
-
-#print(extract_total(line_texts))
