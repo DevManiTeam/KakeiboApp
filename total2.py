@@ -1,6 +1,9 @@
 # 参考記事(https://qiita.com/ossyaritoori/items/6e0800419a098e64f5c3?utm_source=chatgpt.com)
 
+import csv
 import re
+from datetime import datetime
+process_datetime = datetime.now().strftime("%Y-%m-%d") # このプログラムを実行した日時を処理時間(process_datetime)と呼ぶことにする
 
 # テキストファイルの読み取り関数
 def load_text(filename):
@@ -60,7 +63,7 @@ def is_other_line(line):
 
     return False
 
-# メイン処理
+# 合計金額取得のメイン処理
 def extract_total(line_texts):
     for i, line in enumerate(line_texts):
         line = line.strip()# 空白を詰める
@@ -108,7 +111,43 @@ def extract_total(line_texts):
 
     return None
 
+# 日時取得処理
+def extract_time(line_texts):
+    purchase_date = None
+    for line in line_texts:
+        match = re.search(
+            r"(20\d{2})\s*(?:/|年)\s*(\d{1,2})\s*(?:/|月)\s*(\d{1,2})",
+            line
+        )
 
-line_texts = load_text("receipt1.txt")
-#print(line_texts)
-print(extract_total(line_texts))
+        if match:
+            year = int(match.group(1))
+            month = int(match.group(2))
+            day = int(match.group(3))
+
+            purchase_date = datetime(year, month, day).strftime("%Y-%m-%d")
+            break
+
+    if purchase_date is None:
+        purchase_date = process_datetime
+
+    return purchase_date
+
+
+test_txt=["test3.txt", "test4.txt", "test6.txt", "test8.txt", "test9.txt", "receipt1.txt", "receipt2.txt"]
+
+for txt in test_txt:
+    line_texts = load_text(txt)
+    #print(line_texts)
+    total = extract_total(line_texts)
+    purchase_date = extract_time(line_texts)
+    # csv書き込み、newline=''を指定して余分な空行を防ぐ、'a'で追記をする
+    with open("info_log.csv", "a", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+
+        writer.writerow([
+            txt,
+            total,
+            purchase_date,
+            process_datetime
+        ])
