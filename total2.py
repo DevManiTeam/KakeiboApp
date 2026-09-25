@@ -133,12 +133,13 @@ def extract_time(line_texts):
 
     return purchase_date
 
-
+# テスト用テキスト
 test_txt=["test3.txt", "test4.txt", "test6.txt", "test8.txt", "test9.txt", "receipt1.txt", "receipt2.txt"]
 
+# 実際に関数を使うときの例
 for txt in test_txt:
+    # OCR_test2で、OCR後のテキストデータはexe_ocr(txt)によって得られるので、テキストファイルを経由しない方針ならばload_textを変える
     line_texts = load_text(txt)
-    #print(line_texts)
     total = extract_total(line_texts)
     purchase_date = extract_time(line_texts)
     # csv書き込み、newline=''を指定して余分な空行を防ぐ、'a'で追記をする
