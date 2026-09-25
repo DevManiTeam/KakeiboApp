@@ -6,6 +6,9 @@ __pycache__/
 # テスト用ファイル
 test*.txt
 
+# 開発日記(メインにあると恥ずかしいから)
+開発日記.md
+
 # C extensions
 *.so
 
