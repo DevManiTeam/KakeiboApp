@@ -6,6 +6,16 @@ __pycache__/
 # C extensions
 *.so
 
+# Local data
+receipt*.jpg
+receipt*.jpeg
+receipt*.png
+receipt*.txt
+
+# Local expense data
+info_log.csv
+output.csv
+
 # Distribution / packaging
 .Python
 build/
