@@ -3,6 +3,16 @@ __pycache__/
 *.py[codz]
 *$py.class
 
+# テスト用ファイル
+test*.txt
+receipt*.jpg
+receipt*.jpeg
+receipt*.png
+receipt*.txt
+
+# 開発日記(メインにあると恥ずかしいから)
+開発日記.md
+
 # C extensions
 *.so
 
