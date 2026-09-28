@@ -42,7 +42,7 @@ def add_line(cash, year, month, day, today=False):
     obj = pd.read_csv('info_log.csv', header=None)
     pay_day = datetime(year, month, day).strftime("%Y-%m-%d")
     process_datetime = datetime.now().strftime("%Y-%m-%d")
-    if not today:
+    if today:
         pay_day = process_datetime
 
     row_count = len(obj)
