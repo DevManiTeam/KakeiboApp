@@ -44,16 +44,25 @@ label = ctk.CTkLabel(left_frame, text="ファイルは選択されていませ�
 label.pack(padx=10, pady=10)
 
 button = ctk.CTkButton(left_frame, hover_color="green", fg_color="green3", text="ファイルを開く", command=import_explorer)
-button.pack(padx=10, pady=10, fill="both", expand=True)
+button.pack(padx=10, pady=10)
+
+
 
 TkinterDnD.require(app)
 button.drop_target_register(DND_FILES)
 button.dnd_bind("<<Drop>>", import_drop)
 
+scrollabelframe = ctk.CTkScrollableFrame(left_frame,)
+scrollabelframe.pack(fill="both",expand=True,)
+
+for i in range(10):
+    button = ctk.CTkButton(scrollabelframe, text=f"button{i+1}", corner_radius=0)
+    button.pack(fill="x", pady=3)
+
 #画像表示　テスト
 img = Image.open("./IMG_0329.png")
 graph = ctk.CTkImage(light_image=img, dark_image=img, size=(500,500))
-graph_label = ctk.CTkLabel(right_frame, text="グラフ", font=("Arial",20), image=graph,)
+graph_label = ctk.CTkLabel(right_frame, image=graph, text="")
 graph_label.pack()
 
 ################################################################################################################################################

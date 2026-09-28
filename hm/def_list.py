@@ -4,6 +4,7 @@ import os
 from datetime import datetime
 import matplotlib.pyplot as plt
 import pandas as pd
+import glob
 
 #画像を保存するフォルダを作成する
 def make_folder():
@@ -41,10 +42,28 @@ def save_file_drop(imgs_path):
 
 
 #csvファイルからグラフを作成する
-def create_graph(csv_path): #パスを引数とするか　関数内でcsvのパスを取得するか検討中
+def create_graph(): #パスを引数とするか　関数内でcsvのパスを取得するか検討中
+    csv_path = r"./info_log.csv"
     input_csv= pd.read_csv(csv_path)
-    month = input_csv[input_csv.columns[0]] #csv０行目を取得
+    month = input_csv[input_csv.columns[2]] #csv０行目を取得
     amount = input_csv[input_csv.columns[1]] #csv１行目を取得
 
     plt.bar(month, amount) 
     plt.savefig("./graph.png") #グラフ保存
+    plt.close()
+
+
+#csvファイルをリストにする
+def csv_to_list():
+    csv_path = r"./info_log.csv"
+    input_csv = pd.read_csv(csv_path, header=None)
+    # purchase_date = pd.DataFrame(input_csv[input_csv.columns[2]]) #購入日
+    # total_amount = pd.DataFrame(input_csv[input_csv.columns[1]]) #合計金額
+
+    csv_list = []
+    for i in range(len(input_csv)):
+        puchase_date = input_csv.iloc[i,2]
+        total_amount = input_csv.iloc[i,1]
+        csv_list.append([i+1,puchase_date, total_amount])
+
+    return csv_list

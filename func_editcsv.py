@@ -75,16 +75,17 @@ def add_line():
     obj.to_csv('output.csv', index=False, header=False)
 
 # 実際の使用例
-print("0:レシートを指定して、その行を消す, 1:レシートを指定して、合計金額を修正する, 2:レシートを指定して、その行の購入日を修正する, 3:新しく合計金額と購入日時を記録する")
-# 数としてintやfloatで取得する
-ind = int(input())
-if ind == 0:
-    del_line()
-elif ind == 1:
-    edit_total()
-elif ind ==2:
-    edit_time()
-elif ind == 3:
-    add_line()
+if __name__ == "__main__":
+    print("0:レシートを指定して、その行を消す, 1:レシートを指定して、合計金額を修正する, 2:レシートを指定して、その行の購入日を修正する, 3:新しく合計金額と購入日時を記録する")
+    # 数としてintやfloatで取得する
+    ind = int(input())
+    if ind == 0:
+        del_line()
+    elif ind == 1:
+        edit_total()
+    elif ind ==2:
+        edit_time()
+    elif ind == 3:
+        add_line()
 
 # 実際に、表示画面と連携させるときに改めて引数の設定をしたり、何を表示させたりするを修正していきたい
