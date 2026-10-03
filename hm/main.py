@@ -80,10 +80,16 @@ class App(ctk.CTk):
         else:                               #グラフ画像がない場合
             def_list.create_graph()
             img = Image.open(r"./graph.png")
-            
-        self.graph = ctk.CTkImage(light_image=img, dark_image=img, )
-        self.graph_label = ctk.CTkLabel(self.right_frame, image=self.graph, text="")
-        self.graph_label.pack(fill="both",expand=True)
+
+        #元画像の元のサイズを保持
+        self.graph_original_size = img.size
+        
+        self.graph = ctk.CTkImage(light_image=img, dark_image=img, size=(1,1))
+        self.graph_label = ctk.CTkLabel(self.right_frame, image=self.graph, text="",width=1, height=1)
+        #relx,rely　相対的な位置を0~1で指定　anchorはウィジェットを配置する基準位置
+        self.graph_label.place(relx=0.5, rely=0.5, anchor="center")
+        #add="+"はbindで複数の関数を同じイベントにバインドするためのオプション
+        self.right_frame.bind("<Configure>", self.resize_graph, add="+")
     
         ################################################################################################################################################
     
@@ -110,6 +116,29 @@ class App(ctk.CTk):
 
     def list_click(self, event):
         print(event)
+
+    def resize_graph(self, event):
+        #表示倍率
+        scaling = self.right_frame._get_widget_scaling()
+        #event.width, event.heightは変更後のサイズ
+        available_width = event.width / scaling -20 #-20は余白
+        available_height = event.height / scaling - 20
+
+        #画像を配置できない大きさなら、処理を終える
+        if available_width <= 0 or available_height < - 0:
+            return
+        original_width, original_height = self.graph_original_size
+
+        #縦か横小さいほうの倍率に合わせる
+        ratio = min(available_width / original_width, available_height / original_height,)
+
+        #新しいサイズを計算　タプルにまとめる
+        new_size = (max(1, int(original_width * ratio)), max(1, int(original_height * ratio)))
+
+        #cget("size")で現在設定されている画像の表示サイズを取得　新しいサイズと違う時だけリサイズする
+        #そうすることでサイズが同じときはリサイズをしないようにする
+        if self.graph.cget("size") != new_size:
+            self.graph.configure(size=new_size)
     ################################################################################################################################################
 
     

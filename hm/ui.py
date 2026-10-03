@@ -61,9 +61,9 @@ for i in range(10):
 
 #画像表示　テスト
 img = Image.open("./IMG_0329.png")
-graph = ctk.CTkImage(light_image=img, dark_image=img, size=(500,500))
+graph = ctk.CTkImage(light_image=img, dark_image=img, )
 graph_label = ctk.CTkLabel(right_frame, image=graph, text="")
-graph_label.pack()
+graph_label.pack(fill="both",expand=True)
 
 ################################################################################################################################################
 
