@@ -19,7 +19,7 @@ def view_csv():
 
 # レシートの画像テキストを指定して、その行を消す
 def del_line(row):
-    obj = pd.read_csv('info_log.csv', header=None)
+    obj = pd.read_csv('output.csv', header=None) #output.csvにさせてもらってます by hm3rd
     obj = obj.drop(index=[row])
     obj.to_csv('output.csv', index=False, header=False)
 

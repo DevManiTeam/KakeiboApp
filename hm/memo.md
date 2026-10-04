@@ -6,3 +6,7 @@
 - CTkToolTip
 
 -KakeiboAppで実行する python -m hm.main -mはhmパッケージの一部として実行するという意味
+
+20261003
+画像を読み込んでcsvに記述する場合、UIにcsvの内容を反映させるために更新が必要
+画像読み込み　→　OCR&csvに書き込み　→　UI更新　繰り返し

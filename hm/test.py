@@ -1,23 +1,26 @@
-import customtkinter as ctk
-import CTkListbox as lbox
+import tkinter
+import tkinter.messagebox
+import datetime
 
-def on_select(event):
-    selection = event.widget.curselection()
-    if selection:
-        index = selection[0]
-        selected_value = event.widget.get(index)
-        print(f"選択された値: {selected_value}")
+def showDay():
 
-app = ctk.CTk()
+    now = datetime.datetime.now()
+    msg = 'Today is: {}'.format(now.strftime('%A'))
+    tkinter.messagebox.showinfo("Information", msg)
 
-# リストボックスの作成
-listbox = lbox.CTkListbox(app)
-items = ["アイテム1", "アイテム2", "アイテム3"]
-for item in items:
-    listbox.insert(ctk.END, item)
-listbox.pack()
+def showMenu(e):
 
-# イベントバインディング
-listbox.bind("<<ListboxSelect>>", on_select)
+    pmenu.post(e.x_root, e.y_root)
 
-app.mainloop()
+root = tkinter.Tk()
+root.title('ポップアップメニュー')
+
+pmenu = tkinter.Menu(root, tearoff=0)
+
+pmenu.add_command(label="Show Day", command=showDay)
+pmenu.add_command(label="Exit", command=root.quit)
+
+root.bind("<Button-3>", showMenu)
+
+root.geometry('300x150')
+root.mainloop()
