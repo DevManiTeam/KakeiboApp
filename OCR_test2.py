@@ -100,6 +100,7 @@ def exe_ocr(image_path):
 
     return line_texts
 
+"""
 # テスト用のデータ
 paper = ["test3.jpg", "test4.jpg", "test6.jpg", "test8.jpg"]
 
@@ -107,5 +108,5 @@ paper = ["test3.jpg", "test4.jpg", "test6.jpg", "test8.jpg"]
 for txt in paper:
     line_texts = exe_ocr(txt)
     save_text(line_texts, txt.replace(".jpg", ".txt"))
-
+"""
 
