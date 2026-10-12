@@ -43,41 +43,70 @@ def save_file_drop(imgs_path):
 
 #csvファイルからグラフを作成する
 def create_graph(): #パスを引数とするか　関数内でcsvのパスを取得するか検討中
-    try:
-        csv_path = r"./output.csv"
-        input_csv= pd.read_csv(csv_path, header=None)
-    except pd.errors.EmptyDataError:
-        input_csv = pd.DataFrame()
+    # try:
+    #     csv_path = r"./output.csv"
+    #     input_csv= pd.read_csv(csv_path, header=None)
+    # except pd.errors.EmptyDataError:
+    #     input_csv = pd.DataFrame()
 
+    # fig, ax = plt.subplots()
+    # if input_csv.empty:
+    #     ax.text(0.5,0.5,"No data",ha="center", ca="center",transform=ax.transAxes,)
+    # else:
+    #     #month = input_csv[input_csv.columns[2]] #csv０行目を取得
+    #     month = input_csv.iloc[:,2]
+
+    #     #amount = input_csv[input_csv.columns[1]] #csv１行目を取得
+    #     amount = input_csv.iloc[:,1]
+
+    #     ax.bar(month, amount)
+
+    # #plt.bar(month, amount) 
+    # plt.savefig("./graph.png") #グラフ保存
+    # plt.close()
+    csv_list = csv_to_list()
     fig, ax = plt.subplots()
-    if input_csv.empty:
-        ax.text(0.5,0.5,"No data",ha="center", ca="center",transform=ax.transAxes,)
-    else:
-        #month = input_csv[input_csv.columns[2]] #csv０行目を取得
-        month = input_csv.iloc[:,2]
 
-        #amount = input_csv[input_csv.columns[1]] #csv１行目を取得
-        amount = input_csv.iloc[:,1]
+    if not csv_list:
+        ax.text(0.5, 0.5, "no data", ha="center", va="centetr",transform=ax.tranxAxes)
+    else :
+        dates = []
+        amounts = []
 
-        ax.bar(month, amount)
+        for row in csv_list:
+            dates.append((row[2]))
+            amounts.append((row[1]))
+        ax.bar(amounts,dates)
 
-    #plt.bar(month, amount) 
-    plt.savefig("./graph.png") #グラフ保存
+        #日にちが重なりにくいように傾ける
+        ax.tick_params(axis="x", labelrotation=45)
+
+
+    #日付けなどが画像からはみ出しにくいように調整
+    fig.tight_layout()
+    plt.savefig("./graph.png")
     plt.close()
 
 
-#csvファイルをリストにする
+#csvファイルをリストにする　リストボックスに表示するときに使う
 def csv_to_list():
     try:
         csv_path = r"./output.csv"
-        input_csv = pd.read_csv(csv_path, header=None)
+        input_csv = pd.read_csv(csv_path, header=None, names=["text", "amount", "date", "input_date"]) #naems ヘッダーのないcsvに名前を付けて読み込み
+
     except pd.errors.EmptyDataError:
         return []
-    
-    csv_list = []
-    for i in range(len(input_csv)):
-        puchase_date = input_csv.iloc[i,2]
-        total_amount = input_csv.iloc[i,1]
-        csv_list.append([i+1,puchase_date, total_amount])
 
-    return csv_list
+    #合計金額を数値型に変換する
+    input_csv["amount"] = pd.to_numeric(input_csv["amount"])
+    
+    #同じ日付の金額を合計する
+    #reset_index()：集計の基準になった日付を通常の列に戻す
+    new_amount = input_csv.groupby("date", )["amount"].sum().reset_index()
+
+    #新しいcsvを作成
+    csv_list = []
+    for i, row in new_amount.iterrows(): #iterrows()は行のインデックスとその行のデータを取り出す
+        csv_list.append([i+1, row["date"], row["amount"]])
+
+    return csv_list    

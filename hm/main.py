@@ -128,7 +128,7 @@ class App(ctk.CTk):
         print(time)
         self.label.configure(text="画像がドロップから保存されました")
 
-    #リストボックスるをクリックした際のコンテキストメニュー表示
+    #リストボックスをクリックした際のコンテキストメニュー表示
     def list_click(self, event):
         index = self.listbox.curselection()
 
