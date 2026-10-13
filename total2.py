@@ -133,6 +133,8 @@ def extract_time(line_texts):
 
     return purchase_date
 
+
+"""
 # テスト用テキスト
 test_txt=["test3.txt", "test4.txt", "test6.txt", "test8.txt", "test9.txt", "receipt1.txt", "receipt2.txt"]
 
@@ -152,3 +154,4 @@ for txt in test_txt:
             purchase_date,
             process_datetime
         ])
+"""
