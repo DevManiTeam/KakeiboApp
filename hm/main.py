@@ -9,6 +9,7 @@ import os
 #関数リスト
 from . import def_list
 import func_editcsv2
+import image2csv
 
 class App(ctk.CTk):
     def __init__(self):
@@ -60,27 +61,42 @@ class App(ctk.CTk):
         self.button.dnd_bind("<<Drop>>", self.import_drop)
 
         self.listbox = Lbox.CTkListbox(self.left_frame)
-        items = def_list.csv_to_list()
-        for item in items:
-            self.listbox.insert(ctk.END, item)
         self.listbox.pack(fill="both", expand=True, padx=(10,5),pady=10)
-        self.listbox.bind("<<ListboxSelect>>", self.list_click)
+        self.update_listbox()
         
 
 
 
         #mid_frame
-        mid_img = Image.open(r"./graph.png")
-        self.mid_graph = ctk.CTkImage(light_image=mid_img, dark_image=mid_img, size=(200,200))
-        self.mid_graph_label = ctk.CTkLabel(self.mid_frame, image=self.mid_graph, text="",width=1, height=1)
-        #relx,rely　相対的な位置を0~1で指定　anchorはウィジェットを配置する基準位置
-        self.mid_graph_label.pack(side="top",padx=10,pady=10)
+        #表示中の画像を保持
+        self.mid_graph = None
+
+        #同じ日付の画像を切り替える選択欄
+        self.image_selector = ctk.CTkOptionMenu(
+            self.mid_frame,
+            values=["画像なし"], #選択肢として表示する文字列のリスト
+            command=self.display_image, #イメージ　self.display_image("C:\\...\\receipt2.jpg")
+            state="disabled", #最初は操作できない状態
+        )
+        self.image_selector.pack(fill="x", padx=10, pady=10)
+
+        self.mid_graph_label = ctk.CTkLabel(
+            self.mid_frame,
+            text="リストから日付を選択してください",
+        )
+        self.mid_graph_label.pack(fill="both", expand=True, padx=10, pady=10, )
+
+        #選択変更時に画像を表示
+        self.listbox.bind(
+            "<<ListboxSelect>>",
+            self.display_selected_image,
+            add="+",
+        )
+
         
-        self.edit_button = ctk.CTkButton(self.mid_frame, text="edit", )
+        self.edit_button = ctk.CTkButton(self.mid_frame, text="test", )
         self.edit_button.pack(side="left",padx=10,pady=10)
 
-        self.save_csv = ctk.CTkButton(self.mid_frame, text="save_csv",)
-        self.save_csv.pack(side="left",padx=10,pady=10)
 
         
 
@@ -115,39 +131,44 @@ class App(ctk.CTk):
     #関数
     ################################################################################################################################################
     def import_explorer(self):
-        file_path = () #tuple型
-        file_path, time= def_list.save_file_explorer()
-        print(file_path)
-        print(time)
-        self.label.configure(text="画像がエクスプローラーから保存されました")
+        file_paths = () #tuple型
+        file_paths, saved_date= def_list.save_file_explorer()
 
-    def import_drop(self, event):
-        imgs_path = self.tk.splitlist(event.data)
-        file_path, time = def_list.save_file_drop(imgs_path)
-        print(file_path)
-        print(time)
-        self.label.configure(text="画像がドロップから保存されました")
-
-    #リストボックスをクリックした際のコンテキストメニュー表示
-    def list_click(self, event):
-        index = self.listbox.curselection()
-
-        if index is None:
+        #ファイル選択をキャンセルした場合
+        if not file_paths:
             return
 
-        #メニューを開いた時点の選択位置を保存
+        #画像を１枚ずつOCR処理し、csvに追記
+        for image_path in file_paths:
+            image2csv.makecsv(image_path)
+
+        #全画面の追記が終わったら画面を更新
+        self.refresh_ui()
+
+    def import_drop(self, event):
+        imgs_paths = self.tk.splitlist(event.data)
+        file_paths, saved_date = def_list.save_file_drop(imgs_paths)
+
+        #ファイル選択をキャンセルした場合
+        if not file_paths:
+            return
+
+        for image_path in file_paths:
+            image2csv.makecsv(image_path)
+        self.refresh_ui()
+
+    #リストボックスをクリックした際のコンテキストメニュー表示
+    def show_context_menu(self, event, index):
+        #クリックした行を選択する
+        self.listbox.select(index)
         self.context_index = index
 
-        #現在のカーソルの画面座標
-        x = self.winfo_pointerx()
-        y = self.winfo_pointery()
-
+        #右クリックした画面座標にメニューを表示
         try:
-            self.context_menu.tk_popup(x,y) #tk_popup：画面全体を基準と売る座標にメニューを表示する
-        finally: #メニュー中にエラーが起きた場合も実行される
-            self.context_menu.grab_release() #メニューによる入力の歩億を解除する処理
+            self.context_menu.tk_popup(event.x_root, event.y_root)
+        finally:
+            self.context_menu.grab_release()
 
-        print("index:",index)
 
     def resize_graph(self, event):
         #表示倍率
@@ -189,14 +210,8 @@ class App(ctk.CTk):
         self.refresh_ui()
 
     def refresh_ui(self,):
-        #削除前の選択位置を削除
-        self.context_index = None
-
-        items = def_list.csv_to_list()
-        self.listbox.delete("all")
-
-        for item in items:
-            self.listbox.insert(ctk.END, item)
+        #リストの再作成と右クリックの設定
+        self.update_listbox()
 
         #グラフも作りなおす
         def_list.create_graph()
@@ -207,7 +222,106 @@ class App(ctk.CTk):
         self.graph_original_size = img.size
 
         self.graph.configure(light_image=img, dark_image=img)
-        self.mid_graph.configure(light_image=img, dark_image=img)
+
+        self.update_listbox()
+        self.mid_graph_label.configure(
+            image=None,
+            text="リストから日付を選択してください",
+        )
+        self.mid_graph = None
+        self.image_selector.configure(values=["画像なし"], state="disabled")
+        self.image_selector.set("画像なし")
+
+    #リストのデータの数が変わるとindexが変わるのでリストを一度削除してから再作成する
+    def update_listbox(self,):
+        self.context_index = None
+        self.listbox.delete("all")
+
+        #画面の選択位置と日付を対応させるためのデータ
+        self.csv_items = def_list.csv_to_list()
+
+        for index, item in enumerate(self.csv_items): #nnumerateは位置とデータをセットで取り出す
+            row_button = self.listbox.insert(ctk.END, item)
+
+            #i=indexその行の位置を関数を作った時点で保存する
+            row_button.bind("<Button-3>",
+                            lambda event, i=index: self.show_context_menu(event, i),
+                            add="+")
+
+    #指定された画像を読み込み、mid_frameに表示する
+    def display_image(self, image_path):
+        try:
+            with Image.open(image_path) as image:
+                img = image.copy()
+        except OSError as error:
+            self.mid_graph_label.configure(
+                image=None,
+                text=f"画像を読み込めません\n{error}"
+            )
+            self.mid_graph = None
+            return
+
+        #縦横比を保ち220x300に収める
+        width, height = img.size
+        ratio = min(220 / width, 300 / height)
+
+        display_size = (
+            max(1, int(width * ratio)),
+            max(1, int(height * ratio))
+        )
+
+        self.mid_graph = ctk.CTkImage(
+            light_image=img,
+            dark_image=img,
+            size=display_size,
+        )
+
+        self.mid_graph_label.configure(
+            image=self.mid_graph,
+            text="",
+        )
+        
+
+    #選択した日付の画像候補を準備する
+    def display_selected_image(self, event):
+        index = self.listbox.curselection()
+
+        if index is None:
+            return
+
+        #表示データは　番号、日付、合計金額
+        date = self.csv_items[index][1]
+
+        try:
+            paths = def_list.get_image_paths(date) #取得した日付で画像パスを検索する
+        except OSError as error:
+            self.image_selector.configure(state="disabled")
+            self.mid_graph_label.cinfigure(
+                image=None,
+                text="csvを読み込めません\n{error}",
+            )
+            return
+
+        if not paths:
+            self.image_selector.configure(
+                values=["画像なし"],
+                state="disabled",
+            )
+            self.image_selector.set("画像なし")
+            self.mid_graph_label.configure(
+                image=None,
+                text="この日付の画像はありません",
+            )
+            self.mid_graph = None
+            return
+
+        #ドロップダウンに画像パスを設定
+        self.image_selector.configure(values=paths, state="normal")
+        self.image_selector.set(paths[0])
+
+        #最初の画像を表示
+        self.display_image(paths[0])
+
 
     ################################################################################################################################################
 

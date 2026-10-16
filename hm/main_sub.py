@@ -1,6 +1,7 @@
 import customtkinter as ctk
 from tkinter import filedialog
 from tkinterdnd2 import TkinterDnD, DND_FILES
+from tkinter import Menu
 import CTkListbox as Lbox
 import PIL.Image as Image
 import os
@@ -18,15 +19,6 @@ class App(ctk.CTk):
         ################################################################################################################################################
         self.label = ctk.CTkLabel(self, text="KAKEBO", font=("Arial", 30))
         self.label.pack(side="top", padx=10, pady=10,)
-        #label.grid(row=0, column=0,padx=10, pady=10, columnspan=3, sticky=ctk.EW)
-
-        #################
-        self.test_frame = ctk.CTkFrame(self)
-        #self.test_frame.pack(side="top", fill="both", expand=True,)
-
-        
-        
-        #################
 
         self.main_frame = ctk.CTkFrame(self)
         self.main_frame.pack(side="top",padx=10, pady=(5,10), fill="both", expand=True)
@@ -52,6 +44,16 @@ class App(ctk.CTk):
     
 
         #left_frame
+        #コンテキストメニュー
+        #メニューの操作対象
+        self.context_index = None
+
+        #メニューを作成
+        self.context_menu = Menu(self, tearoff=False)
+        self.context_menu.add_command(label="金額編集",command=self.edit_amount)
+        self.context_menu.add_command(label="日付編集",command=self.edit_date)
+        self.context_menu.add_command(label="削除",command=self.delete_csv)
+
         #ドラッグ＆ドロップ
         TkinterDnD.require(self)
         self.button.drop_target_register(DND_FILES)
@@ -63,6 +65,9 @@ class App(ctk.CTk):
             self.listbox.insert(ctk.END, item)
         self.listbox.pack(fill="both", expand=True, padx=(10,5),pady=10)
         self.listbox.bind("<<ListboxSelect>>", self.list_click)
+        
+
+
 
         #mid_frame
         mid_img = Image.open(r"./graph.png")
@@ -99,7 +104,9 @@ class App(ctk.CTk):
         self.right_frame.bind("<Configure>", self.resize_graph, add="+")
     
         ################################################################################################################################################
-    
+
+        #csvを読んでグラフを更新
+        self.refresh_ui()
     
         #画像を保存するフォルダを作成するすでにある場合は作成しない
         def_list.make_folder()
@@ -121,14 +128,26 @@ class App(ctk.CTk):
         print(time)
         self.label.configure(text="画像がドロップから保存されました")
 
+    #リストボックスをクリックした際のコンテキストメニュー表示
     def list_click(self, event):
         index = self.listbox.curselection()
-        value = self.listbox.get()
 
         if index is None:
             return
+
+        #メニューを開いた時点の選択位置を保存
+        self.context_index = index
+
+        #現在のカーソルの画面座標
+        x = self.winfo_pointerx()
+        y = self.winfo_pointery()
+
+        try:
+            self.context_menu.tk_popup(x,y) #tk_popup：画面全体を基準と売る座標にメニューを表示する
+        finally: #メニュー中にエラーが起きた場合も実行される
+            self.context_menu.grab_release() #メニューによる入力の歩億を解除する処理
+
         print("index:",index)
-        print("value:",value)
 
     def resize_graph(self, event):
         #表示倍率
@@ -152,6 +171,44 @@ class App(ctk.CTk):
         #そうすることでサイズが同じときはリサイズをしないようにする
         if self.graph.cget("size") != new_size:
             self.graph.configure(size=new_size)
+
+    def edit_amount(self,):
+        pass
+
+    def edit_date(self,):
+        pass
+
+    def delete_csv(self,):
+        index = self.listbox.curselection()
+        value = self.listbox.get()
+
+        print(index)
+        print(value)
+        func_editcsv2.del_line(index)
+        #ui更新
+        self.refresh_ui()
+
+    def refresh_ui(self,):
+        #削除前の選択位置を削除
+        self.context_index = None
+
+        items = def_list.csv_to_list()
+        self.listbox.delete("all")
+
+        for item in items:
+            self.listbox.insert(ctk.END, item)
+
+        #グラフも作りなおす
+        def_list.create_graph()
+
+        with Image.open("./graph.png") as image:
+            img = image.copy()
+
+        self.graph_original_size = img.size
+
+        self.graph.configure(light_image=img, dark_image=img)
+        self.mid_graph.configure(light_image=img, dark_image=img)
+
     ################################################################################################################################################
 
     
