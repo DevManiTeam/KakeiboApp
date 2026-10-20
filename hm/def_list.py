@@ -32,27 +32,6 @@ def save_file_drop(image_paths):
 
 #csvファイルからグラフを作成する
 def create_graph(): #パスを引数とするか　関数内でcsvのパスを取得するか検討中
-    # try:
-    #     csv_path = r"./output.csv"
-    #     input_csv= pd.read_csv(csv_path, header=None)
-    # except pd.errors.EmptyDataError:
-    #     input_csv = pd.DataFrame()
-
-    # fig, ax = plt.subplots()
-    # if input_csv.empty:
-    #     ax.text(0.5,0.5,"No data",ha="center", ca="center",transform=ax.transAxes,)
-    # else:
-    #     #month = input_csv[input_csv.columns[2]] #csv０行目を取得
-    #     month = input_csv.iloc[:,2]
-
-    #     #amount = input_csv[input_csv.columns[1]] #csv１行目を取得
-    #     amount = input_csv.iloc[:,1]
-
-    #     ax.bar(month, amount)
-
-    # #plt.bar(month, amount) 
-    # plt.savefig("./graph.png") #グラフ保存
-    # plt.close()
     csv_list = csv_to_list()
     fig, ax = plt.subplots()
 
@@ -79,30 +58,21 @@ def create_graph(): #パスを引数とするか　関数内でcsvのパスを�
 
 #csvファイルをリストにする　リストボックスに表示するときに使う
 def csv_to_list():
-    try:
-        csv_path = r"./info_log.csv"
-        input_csv = pd.read_csv(csv_path, header=None, names=["text", "amount", "date", "input_date"]) #naems ヘッダーのないcsvに名前を付けて読み込み
+    data = read_receipts()
 
-    except pd.errors.EmptyDataError:
+    if data.empty:
         return []
 
-    #csvがからの場合は空のリストを返す　初めてアプリを使う場合
-    if input_csv.empty:
-        return []
+    daily_total = (
+        data.groupby("date")["amount"]
+        .sum()
+        .reset_index()
+    )   
 
-    #合計金額を数値型に変換する
-    input_csv["amount"] = pd.to_numeric(input_csv["amount"])
-    
-    #同じ日付の金額を合計する
-    #reset_index()：集計の基準になった日付を通常の列に戻す
-    new_amount = input_csv.groupby("date", )["amount"].sum().reset_index()
-
-    #新しいcsvを作成
-    csv_list = []
-    for i, row in new_amount.iterrows(): #iterrows()は行のインデックスとその行のデータを取り出す
-        csv_list.append([i+1, row["date"], row["amount"]])
-
-    return csv_list    
+    return [
+        [i+1, row["date"], row["amount"]]
+        for i, row in daily_total.iterrows()
+    ]
 
 
 #その日に対応する複数の画像パスをリストで返す
@@ -171,3 +141,27 @@ def save_images(image_paths):
         saved_paths.append(str(destination))
 
     return saved_paths, saved_date
+
+
+#info_logcsvの絶対パスを取得する　CSVを共通の形式で読み込む
+CSV_PATH = Path(__file__).resolve().parent.parent / "info_log.csv"
+
+#集計前のレシート明細を読み込む関数 画像パスと金額、購入日、入力日をデータフレームで返す
+def read_receipts():
+    columns = ["image_path", "amount", "date", "input_date"]
+
+    try:
+        data = pd.read_csv(
+            CSV_PATH,
+            header=None,
+            names=columns,
+            dtype={"image_path": str, "date": str},
+        )
+
+    except pd.errors.EmptyDataError:
+        return pd.DataFrame(columns=columns)
+
+    #金額を数値に変換
+    data["amount"] = pd.to_numeric(data["amount"])
+
+    return data

@@ -18,16 +18,16 @@ def view_csv():
 #入力する行番号の引数は row とする。合計金額の追加や修正を行う際の金額の引数はcash,年月日はそれぞれyear, month, dayである。
 
 # レシートの画像テキストを指定して、その行を消す
-def del_line(row):
-    obj = pd.read_csv('output.csv', header=None) #output.csvにさせてもらってます by hm3rd
+def del_line(row, csv_path="./info_log.csv"):
+    obj = pd.read_csv(csv_path, header=None)
     obj = obj.drop(index=[row])
-    obj.to_csv('output.csv', index=False, header=False)
+    obj.to_csv('info_log.csv', index=False, header=False, encoding="utf-8")
 
 # レシートの画像テキストを指定して、その行の合計金額を修正する
 def edit_total(row, cash):
     obj = pd.read_csv('info_log.csv', header=None)
     obj.iloc[row, 1] = cash
-    obj.to_csv('output.csv', index=False, header=False)
+    obj.to_csv('info_log.csv', index=False, header=False)
 
 # レシートの画像テキストを指定して、その行の購入日を修正する
 def edit_time(row, year, month, day):

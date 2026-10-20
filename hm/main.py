@@ -2,6 +2,8 @@ import customtkinter as ctk
 from tkinter import filedialog
 from tkinterdnd2 import TkinterDnD, DND_FILES
 from tkinter import Menu
+from tkinter import ttk
+from pathlib import Path
 import CTkListbox as Lbox
 import PIL.Image as Image
 import os
@@ -60,10 +62,36 @@ class App(ctk.CTk):
         self.button.drop_target_register(DND_FILES)
         self.button.dnd_bind("<<Drop>>", self.import_drop)
 
-        self.listbox = Lbox.CTkListbox(self.left_frame)
-        self.listbox.pack(fill="both", expand=True, padx=(10,5),pady=10)
-        self.update_listbox()
-        
+        #リストボックス
+        tree_frame = ctk.CTkFrame(self.left_frame)
+        tree_frame.pack(fill="both", expand=True, padx=5, pady=10)
+
+        self.tree = ttk.Treeview(
+            tree_frame,
+            columns=("amount",), #金額用の列を１つ追加
+            show="tree headings", #親子関係の列と見出しの行を表示
+            selectmode="browse", #一度に１項目を選択
+        )
+
+        self.tree.heading("#0", text="日付・画像") #日付・画像の列
+        self.tree.heading("amount", text="金額") #金額の列
+
+        self.tree.column("#0", width=160, minwidth=80)
+        self.tree.column("amount", width=85, minwidth=70, anchor="e")
+
+        scrollbar = ttk.Scrollbar(
+            tree_frame,
+            orient="vertical",
+            command=self.tree.yview, #スクロールバーを操作したらツリーを動かすという指定
+        )
+
+        self.tree.configure(yscrollcommand=scrollbar.set)
+
+        scrollbar.pack(side="right", fill="y")
+        self.tree.pack(side="left", fill="both", expand = True)
+
+        self.receipt_nodes = {}
+        self.context_node=None
 
 
 
@@ -71,27 +99,13 @@ class App(ctk.CTk):
         #表示中の画像を保持
         self.mid_graph = None
 
-        #同じ日付の画像を切り替える選択欄
-        self.image_selector = ctk.CTkOptionMenu(
-            self.mid_frame,
-            values=["画像なし"], #選択肢として表示する文字列のリスト
-            command=self.display_image, #イメージ　self.display_image("C:\\...\\receipt2.jpg")
-            state="disabled", #最初は操作できない状態
-        )
-        self.image_selector.pack(fill="x", padx=10, pady=10)
-
         self.mid_graph_label = ctk.CTkLabel(
             self.mid_frame,
             text="リストから日付を選択してください",
         )
+        self.tree.bind("<<TreeviewSelect>>", self.on_tree_select)
+        self.tree.bind("<Button-3>",self.show_context_menu)
         self.mid_graph_label.pack(fill="both", expand=True, padx=10, pady=10, )
-
-        #選択変更時に画像を表示
-        self.listbox.bind(
-            "<<ListboxSelect>>",
-            self.display_selected_image,
-            add="+",
-        )
 
         
         self.edit_button = ctk.CTkButton(self.mid_frame, text="test", )
@@ -158,12 +172,17 @@ class App(ctk.CTk):
         self.refresh_ui()
 
     #リストボックスをクリックした際のコンテキストメニュー表示
-    def show_context_menu(self, event, index):
-        #クリックした行を選択する
-        self.listbox.select(index)
-        self.context_index = index
+    def show_context_menu(self, event, ):
+        node = self.tree.identify_row(event.y)
 
-        #右クリックした画面座標にメニューを表示
+        if node not in self.receipt_nodes:
+            self.context_node = None
+            return
+
+        self.tree.selection_set(node)
+        self.tree.focus(node)
+        self.context_node = node 
+
         try:
             self.context_menu.tk_popup(event.x_root, event.y_root)
         finally:
@@ -200,18 +219,21 @@ class App(ctk.CTk):
         pass
 
     def delete_csv(self,):
-        index = self.listbox.curselection()
-        value = self.listbox.get()
+        receipt = self.receipt_nodes.get(self.context_node)
 
-        print(index)
-        print(value)
-        func_editcsv2.del_line(index)
+        if receipt is None:
+            return
+
+        func_editcsv2.del_line(
+            receipt["row_index"],
+            csv_path=def_list.CSV_PATH,
+        )
         #ui更新
         self.refresh_ui()
 
     def refresh_ui(self,):
         #リストの再作成と右クリックの設定
-        self.update_listbox()
+        self.update_tree()
 
         #グラフも作りなおす
         def_list.create_graph()
@@ -220,33 +242,56 @@ class App(ctk.CTk):
             img = image.copy()
 
         self.graph_original_size = img.size
-
         self.graph.configure(light_image=img, dark_image=img)
 
-        self.update_listbox()
         self.mid_graph_label.configure(
             image=None,
             text="リストから日付を選択してください",
         )
         self.mid_graph = None
-        self.image_selector.configure(values=["画像なし"], state="disabled")
-        self.image_selector.set("画像なし")
 
-    #リストのデータの数が変わるとindexが変わるのでリストを一度削除してから再作成する
-    def update_listbox(self,):
-        self.context_index = None
-        self.listbox.delete("all")
+    #日付と明細を親子にする
+    def update_tree(self,):
+        roots = self.tree.get_children() #更新前の親項目を取得する
+        open_states = {
+            self.tree.item(node, "text"):self.tree.item(node, "open")
+            for node in roots
+        } #親の日付と開いているかどうかを辞書に保存する
 
-        #画面の選択位置と日付を対応させるためのデータ
-        self.csv_items = def_list.csv_to_list()
+        self.context_node = None
+        self.receipt_nodes.clear()
 
-        for index, item in enumerate(self.csv_items): #nnumerateは位置とデータをセットで取り出す
-            row_button = self.listbox.insert(ctk.END, item)
+        if roots:
+            self.tree.delete(*roots)
 
-            #i=indexその行の位置を関数を作った時点で保存する
-            row_button.bind("<Button-3>",
-                            lambda event, i=index: self.show_context_menu(event, i),
-                            add="+")
+        data = def_list.read_receipts()
+
+        for date, group in data.groupby("date"):
+            parent = self.tree.insert(
+                "",
+                "end",
+                text=date,
+                values=(f"{group["amount"].sum():,.0f}円",),
+                open=open_states.get( date, True),
+            )
+
+            for row_index, row in group.iterrows():
+                image_path = Path(row["image_path"])
+
+                if not image_path.is_absolute():
+                    image_path = def_list.CSV_PATH.parent / image_path
+
+                child = self.tree.insert(
+                    parent,
+                    "end",
+                    text=image_path.name,
+                    values=(f"{row["amount"]:,.0f}円",),
+                )
+
+                self.receipt_nodes[child] = {
+                    "row_index": row_index,
+                    "image_path": str(image_path),
+                }
 
     #指定された画像を読み込み、mid_frameに表示する
     def display_image(self, image_path):
@@ -283,44 +328,24 @@ class App(ctk.CTk):
         
 
     #選択した日付の画像候補を準備する
-    def display_selected_image(self, event):
-        index = self.listbox.curselection()
+    def on_tree_select(self, event):
+        selected = self.tree.selection()
 
-        if index is None:
+        if not selected:
             return
 
-        #表示データは　番号、日付、合計金額
-        date = self.csv_items[index][1]
+        receipt = self.receipt_nodes.get(selected[0])
 
-        try:
-            paths = def_list.get_image_paths(date) #取得した日付で画像パスを検索する
-        except OSError as error:
-            self.image_selector.configure(state="disabled")
-            self.mid_graph_label.cinfigure(
-                image=None,
-                text="csvを読み込めません\n{error}",
-            )
-            return
-
-        if not paths:
-            self.image_selector.configure(
-                values=["画像なし"],
-                state="disabled",
-            )
-            self.image_selector.set("画像なし")
+        if receipt is None:
+            # 親の日付を選択した場合
             self.mid_graph_label.configure(
                 image=None,
-                text="この日付の画像はありません",
+                text="子項目のレシートを選択してください",
             )
             self.mid_graph = None
             return
 
-        #ドロップダウンに画像パスを設定
-        self.image_selector.configure(values=paths, state="normal")
-        self.image_selector.set(paths[0])
-
-        #最初の画像を表示
-        self.display_image(paths[0])
+        self.display_image(receipt["image_path"])
 
 
     ################################################################################################################################################

@@ -18,3 +18,21 @@
 20261016
 - ocr失敗時のデータの編集は未実装
 - マウスホイールでレシート画像の拡大縮小ができるとよい
+
+202261020
+- リストボックスをツリー構造に変更
+
+info_log.csv
+    ├─ read_receipts()
+    │      ↓
+    │  update_tree()
+    │      ├─ 日付ごとの合計 → 親項目
+    │      └─ 個別の明細     → 子項目
+    │
+    └─ read_receipts()
+           ↓
+       csv_to_list()
+           ↓
+       create_graph()
+           ↓
+       graph.png
